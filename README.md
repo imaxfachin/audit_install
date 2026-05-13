@@ -1,3 +1,45 @@
+
+# SSH Audit Logger
+
+Low-level auditing system for Linux servers that monitors and records user sessions and executed commands in real-time. The project focuses on **data integrity** and full terminal **traceability**.
+
+## 🚀 Features
+
+* **Session Monitoring:** Daemon that periodically records logged-in users and source IPs.
+* **Command Auditing:** Real-time capture via `PROMPT_COMMAND`, logging directory (PWD), real user vs. sudo, and return code (EXIT) for every command.
+* **Compiled Binaries:** Monitoring scripts compiled with `SHC` for enhanced security and performance.
+* **Tamper Protection:** Utilizes the `chattr +a` (append-only) attribute, preventing logs from being deleted or modified, even by root.
+* **Retention Management:** Native integration with `logrotate` to keep compressed history for up to 365 days.
+
+## 🛠 Requirements
+
+* **Systems:** Debian/Ubuntu, CentOS/RHEL 7, 8+, AlmaLinux, or Rocky Linux.
+* **Tools:** Bash, systemd, and root privileges.
+* **Dependencies:** The installer automatically configures `gcc`, `make`, `shc`, and `logrotate`.
+
+## 📂 Project Structure
+
+* `/usr/share/.audit/`: Protected directory where logs are stored.
+* `/usr/libexec/`: Contains the compiled service binaries (`sessiond` and `commandd`).
+* `/etc/profile.d/sshh_logger.sh`: Global hook that intercepts terminal activities.
+* `/etc/systemd/system/sshh-daily.service`: Service responsible for persistent session monitoring.
+
+## ⚙️ Installation
+
+1. **Prepare the installation script and set permissions to run as root:**
+```bash
+ :> /tmp/audit_install.sh && chmod +x /tmp/audit_install.sh && nano /tmp/audit_install.sh
+# Paste the script content, save, and exit.
+```
+
+## 📌 View Logs
+
+```bash
+ tail -f /usr/share/.audit/commands.log
+```
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # SSH Audit Logger
 
 Sistema de auditoria de baixo nível para servidores Linux que monitora e registra sessões de usuários e comandos executados em tempo real. O foco do projeto é a **integridade dos dados** e a **rastreabilidade** total do terminal.
