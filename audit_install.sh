@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 ## ------------------------------------------------------------------------------------------------------------------
-# :> /tmp/audit_install.sh && chmod +x /tmp/audit_install.sh && nano /tmp/audit_install.sh
-## ------------------------------------------------------------------------------------------------------------------
 set -u
 ## -------------------------------------## Declarando Variáveis de Cores
 readonly CYN='\033[1;96m' # Infos secundárias ou debug
@@ -41,7 +39,7 @@ install_vSHC() {
     # Instala o SHC se não existir
     if ! command -v shc >/dev/null 2>&1; then
         update_check
-        info "Instalando Pacotes para [SHC]..." && sleep 3
+        # info "Instalando Pacotes para [SHC]..." && sleep 3
         # Detecta se é Debian/Ubuntu
         if command -v apt >/dev/null 2>&1; then
             apt-get install -yq build-essential wget >/dev/null 2>&1 || fatal "Falha ao Instalar o Pacote: [build-essential wget]"
@@ -70,7 +68,7 @@ mk_dir() {
     fi
     # Se o sistema suportar, isso é o que garante a segurança
     if command -v chattr >/dev/null 2>&1; then
-        chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1 || warn "Atributo [chattr] NAO aplicavel."
+        chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1
     fi
     # Cria os arquivos vazios preventivamente
     if [[ ! -f "$LOG_DIR/sessions.log" ]] || [[ ! -f "$LOG_DIR/commands.log" ]]; then
@@ -85,7 +83,7 @@ mk_dir() {
 gen_arch() {
     # Isso evita o erro "getcwd() failed" se a pasta anterior foi deletada
     cd /tmp || fatal "Falha ao acessar /tmp"
-    info "Gerando Arquivos em [ $INSTALL_DIR ]..."
+    # info "Gerando Arquivos em [ $INSTALL_DIR ]..."
     # Limpeza preventiva (remove restos de compilações que falharam)
     rm -f "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
     rm -f "$INSTALL_DIR"/*.sh.x.c "$INSTALL_DIR"/*.sh
@@ -157,7 +155,7 @@ EOL1
 }
 ## ---------------------------------------------# Instalando service
 systemd_conf() {
-    info "Gerando Arquivo de servico [systemd]..."
+    # info "Gerando Arquivo de servico [systemd]..."
     cat <<EOF >/etc/systemd/system/${SERVICE_NAME}
 [Unit]
 Description=SSH Audit Logger Daemon
@@ -172,14 +170,14 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-    info "Habilitando e Iniciando o servico..." && sleep 1
+    info "Habilitando e Iniciando o servico... [systemd]" && sleep 1
     systemctl daemon-reload
     systemctl enable ${SERVICE_NAME} --quiet && sleep 1
     systemctl restart ${SERVICE_NAME} || fatal "Falha ao Reiniciar o Servico [ ${SERVICE_NAME} ]"
 }
 ## ---------------------------------------------# Configurando profile global
 profile_hook_conf() {
-    info "Instalando HOOK de comandos no (/etc/profile.d/)..."
+    # info "Instalando HOOK de comandos no (/etc/profile.d/)..."
     # Usando 'EOF' com aspas para o Bash não tentar interpretar as variáveis agora
     cat <<'EOF' >/etc/profile.d/sshh_logger.sh
 audit_capture() {
@@ -201,7 +199,7 @@ EOF
 }
 ## ---------------------------------------------# Instalando logrotate
 log_conf() {
-    info "Configurando Log Rotate..."
+    # info "Configurando Log Rotate..."
     if [[ -z "${LOG_DIR:-}" ]]; then
         fatal "A variável LOG_DIR está vazia. Abortando configuracao do [logrotate]."
     fi
@@ -232,10 +230,10 @@ unlock_files() {
     local user_home="${HOME:-/root}"
     command -v chattr >/dev/null 2>&1 || warn "Comando[chattr] NAO disponível."
     chattr -ai "$user_home/.bashrc" "$user_home/.bash_history" 2>/dev/null || warn "Erro ao Remover o atributo imutável."
-    success "Removendo atributo imutável... [Processo concluído]."
+    success "... [Processo Concluído]."
 }
 end_install() {
-    success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
+    # success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
     unlock_files
     SCRIPT_ATUAL=$(basename "$0")
     [ -f "/tmp/$SCRIPT_ATUAL" ] && rm -f "/tmp/$SCRIPT_ATUAL" >/dev/null 2>&1
