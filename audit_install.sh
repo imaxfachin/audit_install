@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 ## ------------------------------------------------------------------------------------------------------------------
+# :> /tmp/audit_install.sh && chmod +x /tmp/audit_install.sh && nano /tmp/audit_install.sh
+## ------------------------------------------------------------------------------------------------------------------
 set -u
 ## -------------------------------------## Declarando Variáveis de Cores
 readonly CYN='\033[1;96m' # Infos secundárias ou debug
@@ -124,8 +126,14 @@ USER_CURRENT=$(whoami)
 ## ----------------------------------------------------------------------------
 #IP_RAW=$(who am i 2>/dev/null | awk '{print $NF}' | tr -d '()')
 #[[ -z "$IP_RAW" || "$IP_RAW" == "localhost" ]] && IP_RAW="Local"
-IP_RAW=${SSH_CLIENT%% *}
-[[ -z "$IP_RAW" ]] && IP_RAW="Local"
+# IP mais robusto
+if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    IP_RAW=${SSH_CONNECTION%% *}
+elif [[ -n "${SSH_CLIENT:-}" ]]; then
+    IP_RAW=${SSH_CLIENT%% *}
+else
+    IP_RAW="Local"
+fi
 ## ----------------------------------------------------------------------------
 #SUDO_USER_REAL="${SUDO_USER:-none}"
 TTY=$(tty 2>/dev/null || echo "unknown")
