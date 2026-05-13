@@ -142,7 +142,7 @@ UID_REAL=$(id -u 2>/dev/null)
 PWD_DIR="$PWD"
 # ---------------- LOG ----------------
 # "$(date '+%Y-%m-%d %H:%M:%S')" \
-printf '[IP:%s] | HOST:%s | TTY:%s | UID:%s | USER:%s | PWD:%s | EXIT:%03d | CMD:%s\n' \
+printf '[IP: %s] | HOST: %s | TTY: %s | UID:%s | USER: %s | PWD: %s | EXIT:%03d | CMD:%s\n' \
 "$IP_RAW" \
 "$HOST" \
 "$TTY" \
