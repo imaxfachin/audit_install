@@ -256,6 +256,7 @@ unlock_files() {
     local user_home="${HOME:-/root}"
     command -v chattr >/dev/null 2>&1 || warn "Comando[chattr] NAO disponível."
     chattr -ai "$user_home/.bashrc" "$user_home/.bash_history" 2>/dev/null || warn "Erro ao Remover o atributo imutável."
+    rm -rf /tmp/audit_repo /tmp/4.0.3.tar.gz >/dev/null 2>&1
     success "... [Processo Concluído]."
 }
 end_install() {
