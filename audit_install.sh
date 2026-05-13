@@ -70,7 +70,7 @@ mk_dir() {
     fi
     # Se o sistema suportar, isso é o que garante a segurança
     if command -v chattr >/dev/null 2>&1; then
-        chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1 || warn "chattr NAO suportado."
+        chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1 || warn "Atributo [chattr] NAO aplicavel."
     fi
     # Cria os arquivos vazios preventivamente
     if [[ ! -f "$LOG_DIR/sessions.log" ]] || [[ ! -f "$LOG_DIR/commands.log" ]]; then
