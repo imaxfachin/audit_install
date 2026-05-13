@@ -126,14 +126,17 @@ USER_CURRENT=$(whoami)
 ## ----------------------------------------------------------------------------
 #IP_RAW=$(who am i 2>/dev/null | awk '{print $NF}' | tr -d '()')
 #[[ -z "$IP_RAW" || "$IP_RAW" == "localhost" ]] && IP_RAW="Local"
-# IP mais robusto
+# Tenta pegar IP da sessão
 if [[ -n "${SSH_CONNECTION:-}" ]]; then
     IP_RAW=${SSH_CONNECTION%% *}
 elif [[ -n "${SSH_CLIENT:-}" ]]; then
     IP_RAW=${SSH_CLIENT%% *}
 else
-    IP_RAW="Local"
+    IP_RAW=$(who -m 2>/dev/null | awk '{print $NF}' | tr -d '()')
 fi
+[[ -z "$IP_RAW" ]] && IP_RAW="Local"
+[[ "$LAST_COMMAND" == "history" ]] && exit 0
+[[ "$LAST_COMMAND" == "clear" ]] && exit 0
 ## ----------------------------------------------------------------------------
 #SUDO_USER_REAL="${SUDO_USER:-none}"
 TTY=$(tty 2>/dev/null || echo "unknown")
@@ -141,8 +144,9 @@ HOST=$(hostname -f 2>/dev/null || hostname)
 UID_REAL=$(id -u 2>/dev/null)
 PWD_DIR="$PWD"
 # ---------------- LOG ----------------
-# "$(date '+%Y-%m-%d %H:%M:%S')" \
-printf '[IP: %s] | HOST: %s | TTY: %s | UID:%s | USER: %s | PWD: %s | EXIT:%03d | CMD:%s\n' \
+TMSTMP="$(date '+%Y-%m-%d %H:%M:%S')"
+printf '[%s] | [IP]: %s | [HOST]: %s | [TTY]: %s | [UID]: %s | [USER]: %s | [PWD]: %s | [EXIT]: %s | [CMD]: %s\n' \
+"$TMSTMP" \
 "$IP_RAW" \
 "$HOST" \
 "$TTY" \
@@ -188,20 +192,34 @@ profile_hook_conf() {
     # info "Instalando HOOK de comandos no (/etc/profile.d/)..."
     # Usando 'EOF' com aspas para o Bash não tentar interpretar as variáveis agora
     cat <<'EOF' >/etc/profile.d/sshh_logger.sh
+    # Evita duplicação dentro da sessão
+__LAST_AUDIT_CMD=""
+
 audit_capture() {
-    # Captura o status REAL do último comando
     local status=$?
+    # Só executa em shell interativo
+    [[ -z "${PS1:-}" ]] && return
     # Pega último comando do histórico
     local cmd
     cmd=$(history 1 2>/dev/null | sed 's/^[ ]*[0-9]\+[ ]*//')
-    # Evita linhas vazias
+
+    # Ignora vazio (ENTER)
     [[ -z "$cmd" ]] && return
     # Evita registrar o próprio logger
     [[ "$cmd" == "/usr/libexec/commandd"* ]] && return
+    # Evita duplicação consecutiva
+    [[ "$cmd" == "$__LAST_AUDIT_CMD" ]] && return
+    __LAST_AUDIT_CMD="$cmd"
+
+    # Envia para o logger
     /usr/libexec/commandd "$status" "$cmd"
 }
-# Executa apenas quando o prompt aparece (menos ruído)
-PROMPT_COMMAND="audit_capture"
+# Não sobrescreve outros hooks
+if [[ -n "$PROMPT_COMMAND" ]]; then
+    PROMPT_COMMAND="audit_capture; $PROMPT_COMMAND"
+else
+    PROMPT_COMMAND="audit_capture"
+fi
 EOF
     chmod 644 /etc/profile.d/sshh_logger.sh || warn "Falha ao definir Permissoes"
 }
