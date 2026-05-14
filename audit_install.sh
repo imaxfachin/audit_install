@@ -97,10 +97,14 @@ readonly LOG_FILE="/usr/share/.audit/sessions.log"
 ## ----------------------------------------------------------------------------
 # Lê a saída do comando 'who' para listar os usuários logados
 while true; do
-    who | while read -r USER TTY DATE TIME IP; do
-        # Limpa os parênteses do IP
-        CLEAN_IP=$(echo "${IP:-Local}" | tr -d '()')
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] USER=$USER IP=$CLEAN_IP TTY=$TTY (Ativa)" >>"$LOG_FILE"
+    who | while read -r line; do
+        USER=$(echo "$line" | awk '{print $1}')
+        TTY=$(echo "$line" | awk '{print $2}')
+        # Extrai IP entre parênteses
+        IP=$(echo "$line" | grep -oE '\([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\)')
+        IP=${IP//[()]/}
+        [[ -z "$IP" ]] && IP="Local"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] USER=$USER IP=$IP TTY=$TTY (Ativa)" >>"$LOG_FILE"
     done
     sleep 300
 done
