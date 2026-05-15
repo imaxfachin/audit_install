@@ -22,14 +22,10 @@ success() { echo -e "\n--${GRN} [SUCESSO]:${NC} $* \n"; }
 ## ---------------------------------------------# Instalação e Preparação
 update_check() {
     info "Atualizando o Sistema Operacional..."
-    # Detecta se é Debian/Ubuntu
     if command -v apt >/dev/null 2>&1; then
         apt update -qq >/dev/null 2>&1 || fatal "Falha ao atualizar repositórios (apt)."
-        #apt dist-upgrade -yq || error "( apt dist-upgrade ) Falha na Atualização."
-    # Detecta RHEL/CentOS 8+
     elif command -v dnf >/dev/null 2>&1; then
         dnf makecache -y >/dev/null 2>&1 || fatal "Falha ao atualizar repositórios (dnf)."
-    # Detecta CentOS 7 / sistemas antigos
     elif command -v yum >/dev/null 2>&1; then
         yum makecache -y >/dev/null 2>&1 || fatal "Falha ao atualizar repositórios (yum)."
     else
@@ -38,17 +34,12 @@ update_check() {
 }
 ## ---------------------------------------------# Criando diretórios
 install_vSHC() {
-    # Instala o SHC se não existir
     if ! command -v shc >/dev/null 2>&1; then
         update_check
-        # info "Instalando Pacotes para [SHC]..." && sleep 3
-        # Detecta se é Debian/Ubuntu
         if command -v apt >/dev/null 2>&1; then
             apt-get install -yq build-essential wget >/dev/null 2>&1 || fatal "Falha ao Instalar o Pacote: [build-essential wget]"
-        # Detecta RHEL/CentOS 8+
         elif command -v dnf >/dev/null 2>&1; then
             dnf install -y gcc make wget >/dev/null 2>&1 || fatal "Falha ao instalar dependências."
-        # Detecta CentOS 7 / sistemas antigos
         elif command -v yum >/dev/null 2>&1; then
             yum install -y gcc make wget >/dev/null 2>&1 || fatal "Falha ao instalar dependências."
         else
@@ -62,17 +53,14 @@ install_vSHC() {
     fi
 }
 mk_dir() {
-    chmod 755 "$INSTALL_DIR" >/dev/null 2>&1 # Permitir que usuários comuns entrem no diretório
-    # Cria o diretório se não existir
+    chmod 755 "$INSTALL_DIR" >/dev/null 2>&1
     if [[ ! -d "$LOG_DIR" ]]; then
         mkdir -p "$LOG_DIR" >/dev/null 2>&1 || fatal "Falha ao Criar o Diretorio: ($LOG_DIR)"
         chmod 777 "$LOG_DIR" >/dev/null 2>&1
     fi
-    # Se o sistema suportar, isso é o que garante a segurança
     if command -v chattr >/dev/null 2>&1; then
         chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1
     fi
-    # Cria os arquivos vazios preventivamente
     if [[ ! -f "$LOG_DIR/sessions.log" ]] || [[ ! -f "$LOG_DIR/commands.log" ]]; then
         touch "$LOG_DIR/sessions.log" "$LOG_DIR/commands.log" >/dev/null 2>&1 || warn "Falha ao Criar o Arquivos: ($LOG_DIR/*.log)"
         chmod 666 "$LOG_DIR"/*.log >/dev/null 2>&1
@@ -83,13 +71,9 @@ mk_dir() {
 }
 ## ---------------------------------------------# Copiando arquivos
 gen_arch() {
-    # Isso evita o erro "getcwd() failed" se a pasta anterior foi deletada
     cd /tmp || fatal "Falha ao acessar /tmp"
-    # info "Gerando Arquivos em [ $INSTALL_DIR ]..."
-    # Limpeza preventiva (remove restos de compilações que falharam)
     rm -f "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
     rm -f "$INSTALL_DIR"/*.sh.x.c "$INSTALL_DIR"/*.sh
-    # Criando os fontes .sh
     cat <<'EOL' >"$INSTALL_DIR/sessiond.sh"
 #!/bin/bash
 ## ----------------------------------------------------------------------------
@@ -109,7 +93,6 @@ while true; do
     sleep 300
 done
 EOL
-    # Assumindo que os scripts abaixo está no mesmo diretório do audit_install.sh
     cat <<'EOL1' >"$INSTALL_DIR/commandd.sh"
 #!/bin/bash
 ## ----------------------------------------------------------------------------
@@ -161,17 +144,14 @@ printf '[%s] | [IP]: %s | [HOST]: %s | [TTY]: %s | [UID]: %s | [USER]: %s | [PWD
 "$LAST_COMMAND" >>"$LOG_FILE"
 EOL1
     chmod +x "$INSTALL_DIR/sessiond.sh" "$INSTALL_DIR/commandd.sh" >/dev/null 2>&1 || fatal "Falha ao definir Permissoes..."
-    # Compila os scripts
     shc -S -r -f "$INSTALL_DIR/sessiond.sh" -o "$INSTALL_DIR/sessiond" || fatal "Erro ao compilar sessiond"
     shc -S -r -f "$INSTALL_DIR/commandd.sh" -o "$INSTALL_DIR/commandd" || fatal "Erro ao compilar commandd"
-    # LIMPEZA SEGURA: Remove apenas o que não é binário
     rm -f "$INSTALL_DIR/sessiond.sh" "$INSTALL_DIR/commandd.sh"
     rm -f "$INSTALL_DIR"/*.x.c
     chmod 755 "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
 }
 ## ---------------------------------------------# Instalando service
 systemd_conf() {
-    # info "Gerando Arquivo de servico [systemd]..."
     cat <<EOF >/etc/systemd/system/${SERVICE_NAME}
 [Unit]
 Description=SSH Audit Logger Daemon
@@ -193,8 +173,6 @@ EOF
 }
 ## ---------------------------------------------# Configurando profile global
 profile_hook_conf() {
-    # info "Instalando HOOK de comandos no (/etc/profile.d/)..."
-    # Usando 'EOF' com aspas para o Bash não tentar interpretar as variáveis agora
     cat <<'EOF' >/etc/profile.d/sshh_logger.sh
     # Evita duplicação dentro da sessão
 __LAST_AUDIT_CMD=""
@@ -229,7 +207,6 @@ EOF
 }
 ## ---------------------------------------------# Instalando logrotate
 log_conf() {
-    # info "Configurando Log Rotate..."
     if [[ -z "${LOG_DIR:-}" ]]; then
         fatal "A variável LOG_DIR está vazia. Abortando configuracao do [logrotate]."
     fi
@@ -263,11 +240,13 @@ unlock_files() {
     rm -rf /tmp/audit_repo /tmp/4.0.3.tar.gz >/dev/null 2>&1
     success "... [Processo Concluído]."
 }
-end_install() {
+exit_code() {
     # success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
     unlock_files
-    SCRIPT_ATUAL=$(basename "$0")
-    [ -f "/tmp/$SCRIPT_ATUAL" ] && rm -f "/tmp/$SCRIPT_ATUAL" >/dev/null 2>&1
+    SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+    if [[ -f "$SCRIPT_PATH" && "$SCRIPT_PATH" == *.sh ]]; then
+        rm -f "$SCRIPT_PATH" >/dev/null 2>&1
+    fi
     exit 0
 }
 ## ---------------------------------------------# Execução Principal (Main)
@@ -278,7 +257,7 @@ main() {
     systemd_conf
     profile_hook_conf
     log_conf
-    end_install
+    exit_code
 }
 # Inicia o script
 main
