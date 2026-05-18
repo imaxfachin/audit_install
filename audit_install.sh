@@ -46,10 +46,14 @@ install_vSHC() {
             fatal "Gerenciador de pacotes NAO encontrado. [Encerrando o Script]..."
         fi
         wget -P /tmp https://github.com/neurobin/shc/archive/refs/tags/4.0.3.tar.gz >/dev/null 2>&1 || fatal "Falha ao Baixar o Arquivo: [ 4.0.3.tar.gz ]"
-        cd /tmp && tar -xf 4.0.3.tar.gz
-        cd shc-4.0.3 || fatal "Falha ao Acessar o Diretorio do SHC: [ shc-4.0.3 ]"
+        # Extrai forçando o destino para dentro do /tmp
+        tar -xf /tmp/4.0.3.tar.gz -C /tmp || fatal "Falha ao extrair o [ tar.gz ]."
+        # pushd entra no diretório salvando de onde você veio
+        pushd /tmp/shc-4.0.3 >/dev/null || fatal "Falha ao acessar o diretorio do [shc-4.0.3]."
         ./configure >/dev/null && make >/dev/null && make install >/dev/null
-        rm -rf /tmp/shc-4.0.3 4.0.3.tar.gz
+        # popd tira você daí de dentro e te devolve exatamente para onde você estava antes
+        popd >/dev/null || fatal "Falha ao retornar ao diretorio Original do instalador."
+        rm -rf /tmp/shc-4.0.3 /tmp/4.0.3.tar.gz
     fi
 }
 mk_dir() {
@@ -244,9 +248,6 @@ exit_code() {
     script_path="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
     # success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
     unlock_files
-    if [[ -d "/tmp/audit_repo" ]]; then
-        rm -rf /tmp/audit_repo >/dev/null 2>&1
-    fi
     rm -f /tmp/4.0.3.tar.gz >/dev/null 2>&1
     # Por fim, se o script atual for o arquivo .sh avulso, ele se auto-exclui
     SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
