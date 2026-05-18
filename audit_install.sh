@@ -237,12 +237,18 @@ unlock_files() {
     local user_home="${HOME:-/root}"
     command -v chattr >/dev/null 2>&1 || warn "Comando[chattr] NAO disponível."
     chattr -ai "$user_home/.bashrc" "$user_home/.bash_history" 2>/dev/null || warn "Erro ao Remover o atributo imutável."
-    rm -rf /tmp/audit_repo /tmp/4.0.3.tar.gz >/dev/null 2>&1
     success "... [Processo Concluído]."
 }
 exit_code() {
+    local script_path
+    script_path="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
     # success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
     unlock_files
+    if [[ -d "/tmp/audit_repo" ]]; then
+        rm -rf /tmp/audit_repo >/dev/null 2>&1
+    fi
+    rm -f /tmp/4.0.3.tar.gz >/dev/null 2>&1
+    # Por fim, se o script atual for o arquivo .sh avulso, ele se auto-exclui
     SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
     if [[ -f "$SCRIPT_PATH" && "$SCRIPT_PATH" == *.sh ]]; then
         rm -f "$SCRIPT_PATH" >/dev/null 2>&1
