@@ -244,8 +244,8 @@ unlock_files() {
     success "... [Processo Concluído]."
 }
 exit_code() {
-    local script_path
-    script_path="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
+    local SCRIPT_PATH
+    SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
     # success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
     unlock_files
     rm -f /tmp/4.0.3.tar.gz >/dev/null 2>&1
