@@ -245,12 +245,11 @@ unlock_files() {
 }
 exit_code() {
     local SCRIPT_PATH
-    SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
     unlock_files
     # success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
     rm -f /tmp/4.0.3.tar.gz >/dev/null 2>&1
     # Por fim, se o script atual for o arquivo .sh avulso, ele se auto-exclui
-    # SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+    SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
     if [[ -f "$SCRIPT_PATH" && "$SCRIPT_PATH" == *.sh ]]; then
         rm -f "$SCRIPT_PATH" >/dev/null 2>&1
     fi
