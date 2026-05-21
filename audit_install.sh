@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 
-## ------------------------------------------------------------------------------------------------------------------
-# :> /tmp/audit_install.sh && chmod +x /tmp/audit_install.sh && nano /tmp/audit_install.sh
-## ------------------------------------------------------------------------------------------------------------------
 set -u
-## -------------------------------------## Declarando Variáveis de Cores
+## ---------------------------------------------# Declarando Variáveis de Cores
 readonly CYN='\033[1;96m' # Infos secundárias ou debug
 readonly RED='\033[1;91m' # Erros e alertas críticos
 readonly GRN='\033[1;92m' # Sucesso / OK
@@ -14,12 +11,13 @@ readonly NC='\033[0m'     # Sem cor / reset
 readonly INSTALL_DIR="/usr/libexec"
 readonly LOG_DIR="/usr/share/.audit"
 readonly SERVICE_NAME="sshh-daily.service"
+readonly SHCDIR="/tmp/shc-4.0.3"
 ## ---------------------------------------------# Funções
 info() { echo -e "\n--${CYN} [INFO]:> ${NC} $*"; }
 warn() { echo -e "\n--${YEL} [AVISO]:>> ${NC} $*"; }
 fatal() { echo -e "\n--${RED} [ERRO FATAL]:${NC} $* \n" >&2 && exit 1; }
 success() { echo -e "\n--${GRN} [SUCESSO]:${NC} $* \n"; }
-## ---------------------------------------------# Instalação e Preparação
+## ---------------------------------------------#
 update_check() {
     info "Atualizando o Sistema Operacional..."
     if command -v apt >/dev/null 2>&1; then
@@ -32,12 +30,13 @@ update_check() {
         fatal "Gerenciador de pacotes NAO encontrado. [Encerrando o Script]..."
     fi
 }
-## ---------------------------------------------# Criando diretórios
+## ---------------------------------------------#
 install_vSHC() {
     if ! command -v shc >/dev/null 2>&1; then
         update_check
         if command -v apt >/dev/null 2>&1; then
-            apt-get install -yq build-essential wget >/dev/null 2>&1 || fatal "Falha ao Instalar o Pacote: [build-essential wget]"
+            apt-get install -yq build-essential wget >/dev/null 2>&1 ||
+                fatal "Falha ao Instalar o Pacote: [build-essential wget]"
         elif command -v dnf >/dev/null 2>&1; then
             dnf install -y gcc make wget >/dev/null 2>&1 || fatal "Falha ao instalar dependências."
         elif command -v yum >/dev/null 2>&1; then
@@ -45,17 +44,16 @@ install_vSHC() {
         else
             fatal "Gerenciador de pacotes NAO encontrado. [Encerrando o Script]..."
         fi
-        wget -P /tmp https://github.com/neurobin/shc/archive/refs/tags/4.0.3.tar.gz >/dev/null 2>&1 || fatal "Falha ao Baixar o Arquivo: [ 4.0.3.tar.gz ]"
-        # Extrai forçando o destino para dentro do /tmp
+        wget -P /tmp https://github.com/neurobin/shc/archive/refs/tags/4.0.3.tar.gz >/dev/null 2>&1 ||
+            fatal "Falha ao Baixar o Arquivo: [ 4.0.3.tar.gz ]"
         tar -xf /tmp/4.0.3.tar.gz -C /tmp || fatal "Falha ao extrair o [ tar.gz ]."
-        # pushd entra no diretório salvando de onde você veio
-        pushd /tmp/shc-4.0.3 >/dev/null || fatal "Falha ao acessar o diretorio do [shc-4.0.3]."
+        pushd "$SHCDIR" >/dev/null || fatal "Falha ao acessar o Diretorio do [ tar.gz ]."
         ./configure >/dev/null && make >/dev/null && make install >/dev/null
-        # popd tira você daí de dentro e te devolve exatamente para onde você estava antes
         popd >/dev/null || fatal "Falha ao retornar ao diretorio Original do instalador."
-        rm -rf /tmp/shc-4.0.3 /tmp/4.0.3.tar.gz
+        pushd "$SHCDIR" >/dev/null || fatal "Falha ao acessar o Diretorio do [ tar.gz ]."
     fi
 }
+## ---------------------------------------------#
 mk_dir() {
     chmod 755 "$INSTALL_DIR" >/dev/null 2>&1
     if [[ ! -d "$LOG_DIR" ]]; then
@@ -66,15 +64,15 @@ mk_dir() {
         chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1
     fi
     if [[ ! -f "$LOG_DIR/sessions.log" ]] || [[ ! -f "$LOG_DIR/commands.log" ]]; then
-        touch "$LOG_DIR/sessions.log" "$LOG_DIR/commands.log" >/dev/null 2>&1 || warn "Falha ao Criar o Arquivos: ($LOG_DIR/*.log)"
-        chmod 666 "$LOG_DIR"/*.log >/dev/null 2>&1
+        touch "$LOG_DIR/sessions.log" "$LOG_DIR/commands.log" >/dev/null 2>&1 ||
+            chmod 666 "$LOG_DIR"/*.log >/dev/null 2>&1
     else
         info "Arquivos de log já existem. Mantendo integridade."
     fi
     chattr +a "$LOG_DIR"/*.log 2>/dev/null || warn "chattr +a não suportado."
 }
-## ---------------------------------------------# Copiando arquivos
-gen_arch() {
+## ---------------------------------------------#
+genarch() {
     cd /tmp || fatal "Falha ao acessar /tmp"
     rm -f "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
     rm -f "$INSTALL_DIR"/*.sh.x.c "$INSTALL_DIR"/*.sh
@@ -106,7 +104,7 @@ readonly LOG_FILE="/usr/share/.audit/commands.log"
 [[ "$2" == "/usr/libexec/commandd"* ]] && exit 0
 [[ "$2" =~ ^_ ]] && exit 0
 # ---------------- DADOS ----------------
-EXIT_CODE="${1:-0}"
+exit_script="${1:-0}"
 LAST_COMMAND="${2:-N/A}"
 ## ----------------------------------------------------------------------------
 USER_ORIGINAL=$(logname 2>/dev/null || echo "$USER")
@@ -115,9 +113,6 @@ USER_CURRENT=$(whoami)
     && USER_DISP="(${USER_ORIGINAL})->(${USER_CURRENT})" \
     || USER_DISP="(${USER_CURRENT})"
 ## ----------------------------------------------------------------------------
-#IP_RAW=$(who am i 2>/dev/null | awk '{print $NF}' | tr -d '()')
-#[[ -z "$IP_RAW" || "$IP_RAW" == "localhost" ]] && IP_RAW="Local"
-# Tenta pegar IP da sessão
 if [[ -n "${SSH_CONNECTION:-}" ]]; then
     IP_RAW=${SSH_CONNECTION%% *}
 elif [[ -n "${SSH_CLIENT:-}" ]]; then
@@ -129,7 +124,6 @@ fi
 [[ "$LAST_COMMAND" == "history" ]] && exit 0
 [[ "$LAST_COMMAND" == "clear" ]] && exit 0
 ## ----------------------------------------------------------------------------
-#SUDO_USER_REAL="${SUDO_USER:-none}"
 TTY=$(tty 2>/dev/null || echo "unknown")
 HOST=$(hostname -f 2>/dev/null || hostname)
 UID_REAL=$(id -u 2>/dev/null)
@@ -144,7 +138,7 @@ printf '[%s] | [IP]: %s | [HOST]: %s | [TTY]: %s | [UID]: %s | [USER]: %s | [PWD
 "$UID_REAL" \
 "$USER_DISP" \
 "$PWD_DIR" \
-"$EXIT_CODE" \
+"$exit_script" \
 "$LAST_COMMAND" >>"$LOG_FILE"
 EOL1
     chmod +x "$INSTALL_DIR/sessiond.sh" "$INSTALL_DIR/commandd.sh" >/dev/null 2>&1 || fatal "Falha ao definir Permissoes..."
@@ -154,7 +148,7 @@ EOL1
     rm -f "$INSTALL_DIR"/*.x.c
     chmod 755 "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
 }
-## ---------------------------------------------# Instalando service
+## ---------------------------------------------#
 systemd_conf() {
     cat <<EOF >/etc/systemd/system/${SERVICE_NAME}
 [Unit]
@@ -175,32 +169,24 @@ EOF
     systemctl enable ${SERVICE_NAME} --quiet && sleep 1
     systemctl restart ${SERVICE_NAME} || fatal "Falha ao Reiniciar o Servico [ ${SERVICE_NAME} ]"
 }
-## ---------------------------------------------# Configurando profile global
-profile_hook_conf() {
+## ---------------------------------------------#
+hook_conf() {
     cat <<'EOF' >/etc/profile.d/sshh_logger.sh
-    # Evita duplicação dentro da sessão
 __LAST_AUDIT_CMD=""
 
 audit_capture() {
     local status=$?
-    # Só executa em shell interativo
     [[ -z "${PS1:-}" ]] && return
-    # Pega último comando do histórico
     local cmd
     cmd=$(history 1 2>/dev/null | sed 's/^[ ]*[0-9]\+[ ]*//')
 
-    # Ignora vazio (ENTER)
     [[ -z "$cmd" ]] && return
-    # Evita registrar o próprio logger
     [[ "$cmd" == "/usr/libexec/commandd"* ]] && return
-    # Evita duplicação consecutiva
     [[ "$cmd" == "$__LAST_AUDIT_CMD" ]] && return
     __LAST_AUDIT_CMD="$cmd"
 
-    # Envia para o logger
     /usr/libexec/commandd "$status" "$cmd"
 }
-# Não sobrescreve outros hooks
 if [[ -n "$PROMPT_COMMAND" ]]; then
     PROMPT_COMMAND="audit_capture; $PROMPT_COMMAND"
 else
@@ -209,7 +195,7 @@ fi
 EOF
     chmod 644 /etc/profile.d/sshh_logger.sh || warn "Falha ao definir Permissoes"
 }
-## ---------------------------------------------# Instalando logrotate
+## ---------------------------------------------#
 log_conf() {
     if [[ -z "${LOG_DIR:-}" ]]; then
         fatal "A variável LOG_DIR está vazia. Abortando configuracao do [logrotate]."
@@ -237,33 +223,34 @@ $LOG_DIR/*.log {
 }
 EOF
 }
+## ---------------------------------------------#
 unlock_files() {
     local user_home="${HOME:-/root}"
-    command -v chattr >/dev/null 2>&1 || warn "Comando[chattr] NAO disponível."
-    chattr -ai "$user_home/.bashrc" "$user_home/.bash_history" 2>/dev/null || warn "Erro ao Remover o atributo imutável."
-    success "... [Processo Concluído]."
+    command -v chattr >/dev/null 2>&1 || warn "Comando [ chattr ] NAO disponivel."
+    chattr -ai "$user_home/.bashrc" "$user_home/.bash_history" 2>/dev/null ||
+        warn "Erro ao Remover o atributo imutável."
+    success "... [Processo Concluido]."
 }
-exit_code() {
-    local SCRIPT_PATH
+## ---------------------------------------------#
+exit_script() {
     unlock_files
-    # success "SSH Audit Logger instalado com [ Maestria ] - [ OK ]" && sleep 3
-    rm -f /tmp/4.0.3.tar.gz >/dev/null 2>&1
-    # Por fim, se o script atual for o arquivo .sh avulso, ele se auto-exclui
+    rm -f "$SHCDIR" /tmp/4.0.3.tar.gz >/dev/null 2>&1
+    local SCRIPT_PATH
     SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
     if [[ -f "$SCRIPT_PATH" && "$SCRIPT_PATH" == *.sh ]]; then
         rm -f "$SCRIPT_PATH" >/dev/null 2>&1
     fi
     exit 0
 }
-## ---------------------------------------------# Execução Principal (Main)
+## ---------------------------------------------#
 main() {
     install_vSHC
     mk_dir
-    gen_arch
+    genarch
     systemd_conf
-    profile_hook_conf
+    hook_conf
     log_conf
-    exit_code
+    exit_script
 }
-# Inicia o script
-main
+## ---------------------------------------------#
+main "$@"
