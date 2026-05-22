@@ -234,7 +234,7 @@ unlock_files() {
 ## ---------------------------------------------#
 exit_script() {
     unlock_files
-    rm -f "$SHCDIR" /tmp/4.0.3.tar.gz >/dev/null 2>&1
+    rm -rf "$SHCDIR" /tmp/4.0.3.tar.gz >/dev/null 2>&1
     local SCRIPT_PATH
     SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")"
     if [[ -f "$SCRIPT_PATH" && "$SCRIPT_PATH" == *.sh ]]; then
