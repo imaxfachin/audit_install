@@ -64,11 +64,10 @@ mk_dir() {
         chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1
     fi
     if [[ ! -f "$LOG_DIR/sessions.log" ]] || [[ ! -f "$LOG_DIR/commands.log" ]]; then
-        touch "$LOG_DIR/sessions.log" "$LOG_DIR/commands.log" >/dev/null 2>&1 ||
-            chmod 666 "$LOG_DIR"/*.log >/dev/null 2>&1
-    else
-        info "Arquivos de log já existem. Mantendo integridade."
+        touch "$LOG_DIR/sessions.log" "$LOG_DIR/commands.log" >/dev/null 2>&1
     fi
+    chattr -ai "$LOG_DIR"/*.log >/dev/null 2>&1
+    chmod 666 "$LOG_DIR"/*.log >/dev/null 2>&1
     chattr +a "$LOG_DIR"/*.log 2>/dev/null || warn "chattr +a não suportado."
 }
 ## ---------------------------------------------#
@@ -142,11 +141,15 @@ printf '[%s] | [IP]: %s | [HOST]: %s | [TTY]: %s | [UID]: %s | [USER]: %s | [PWD
 "$LAST_COMMAND" >>"$LOG_FILE"
 EOL1
     chmod +x "$INSTALL_DIR/sessiond.sh" "$INSTALL_DIR/commandd.sh" >/dev/null 2>&1 || fatal "Falha ao definir Permissoes..."
-    shc -S -H -r -f "$INSTALL_DIR/sessiond.sh" -o "$INSTALL_DIR/sessiond" || fatal "Erro ao compilar sessiond"
-    shc -S -H -r -f "$INSTALL_DIR/commandd.sh" -o "$INSTALL_DIR/commandd" || fatal "Erro ao compilar commandd"
+    # Volte para a flag padrão -S -r (sem o -H)
+    shc -S -r -f "$INSTALL_DIR/sessiond.sh" -o "$INSTALL_DIR/sessiond" || fatal "Erro ao compilar sessiond"
+    shc -S -r -f "$INSTALL_DIR/commandd.sh" -o "$INSTALL_DIR/commandd" || fatal "Erro ao compilar commandd"
+
     rm -f "$INSTALL_DIR/sessiond.sh" "$INSTALL_DIR/commandd.sh"
     rm -f "$INSTALL_DIR"/*.x.c
-    chmod 4755 "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
+
+    # Volte para o padrão seguro 755
+    chmod 755 "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
 }
 ## ---------------------------------------------#
 systemd_conf() {
