@@ -50,7 +50,7 @@ install_vSHC() {
         pushd "$SHCDIR" >/dev/null || fatal "Falha ao acessar o Diretorio do [ tar.gz ]."
         ./configure >/dev/null && make >/dev/null && make install >/dev/null
         popd >/dev/null || fatal "Falha ao retornar ao diretorio Original do instalador."
-        pushd "$SHCDIR" >/dev/null || fatal "Falha ao acessar o Diretorio do [ tar.gz ]."
+        rm -rf "$SHCDIR" /tmp/4.0.3.tar.gz >/dev/null 2>&1
     fi
 }
 ## ---------------------------------------------#
@@ -142,11 +142,11 @@ printf '[%s] | [IP]: %s | [HOST]: %s | [TTY]: %s | [UID]: %s | [USER]: %s | [PWD
 "$LAST_COMMAND" >>"$LOG_FILE"
 EOL1
     chmod +x "$INSTALL_DIR/sessiond.sh" "$INSTALL_DIR/commandd.sh" >/dev/null 2>&1 || fatal "Falha ao definir Permissoes..."
-    shc -S -r -f "$INSTALL_DIR/sessiond.sh" -o "$INSTALL_DIR/sessiond" || fatal "Erro ao compilar sessiond"
-    shc -S -r -f "$INSTALL_DIR/commandd.sh" -o "$INSTALL_DIR/commandd" || fatal "Erro ao compilar commandd"
+    shc -S -H -r -f "$INSTALL_DIR/sessiond.sh" -o "$INSTALL_DIR/sessiond" || fatal "Erro ao compilar sessiond"
+    shc -S -H -r -f "$INSTALL_DIR/commandd.sh" -o "$INSTALL_DIR/commandd" || fatal "Erro ao compilar commandd"
     rm -f "$INSTALL_DIR/sessiond.sh" "$INSTALL_DIR/commandd.sh"
     rm -f "$INSTALL_DIR"/*.x.c
-    chmod 755 "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
+    chmod 4755 "$INSTALL_DIR/sessiond" "$INSTALL_DIR/commandd"
 }
 ## ---------------------------------------------#
 systemd_conf() {
