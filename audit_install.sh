@@ -2,11 +2,8 @@
 
 set -u
 ## ---------------------------------------------# Declarando Variáveis de Cores
-readonly CYN='\033[1;96m' # Infos secundárias ou debug
-readonly RED='\033[1;91m' # Erros e alertas críticos
-readonly GRN='\033[1;92m' # Sucesso / OK
-readonly YEL='\033[1;33m' # Avisos / atenção
-readonly NC='\033[0m'     # Sem cor / reset
+readonly NC='\033[0m' # Sem cor / reset
+readonly CYN='\033[1;96m' RED='\033[1;91m' GRN='\033[1;92m' YEL='\033[1;33m'
 ## ---------------------------------------------# Variáveis
 readonly INSTALL_DIR="/usr/libexec"
 readonly LOG_DIR="/usr/share/.audit"
